@@ -1,21 +1,33 @@
-let targetText = '';
-document.addEventListener('contextmenu', (e) => {
-  const selection = document.getSelection();
-  targetText = '';
+let targetElement: HTMLElement | undefined;
 
-  if (selection !== null) {
-    targetText = selection.toString().trim();
+['contextmenu', 'mousemove'].forEach((e) => document.addEventListener(e, (e) => {
+  targetElement = void 0;
+  if (e.target instanceof HTMLElement) {
+    targetElement = e.target;
   }
-  if (!targetText && e.target instanceof HTMLElement) {
-    targetText = e.target.innerText;
-  }
-  console.log('targetText', targetText, selection, e.target);
-});
+}));
+
+function getTargetText() {
+  return document.getSelection()?.toString()?.trim()
+    || targetElement?.innerText || '';
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.action) {
     case 'json-view':
-      jsonView(targetText);
+      jsonView();
       break;
+  }
+});
+
+let lastTime = 0;
+document.addEventListener('keypress', (e) => {
+  if (e.key === 'v') {
+    const now = Date.now();
+    if (now - lastTime < 300) {
+      jsonView();
+    }
+    lastTime = now;
   }
 });
 
@@ -66,7 +78,11 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
     .replace(/\\t/g, '  ');
 }
 
-function jsonView(text: string) {
+function jsonView() {
+  const text = getTargetText();
+  if (!text) {
+    return;
+  }
   let data = text;
   const tempMap = new Map<number, string>();
   try {
