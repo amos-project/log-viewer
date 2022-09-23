@@ -53,7 +53,9 @@ document.addEventListener('click', (e) => {
   if (e.target === jsonElement) {
     return;
   }
-  document.body.removeChild(jsonElement);
+  if (jsonElement.parentNode) {
+    document.body.removeChild(jsonElement);
+  }
 });
 
 function prettyJson(value: any, map: Map<number, string>, depth: number) {
