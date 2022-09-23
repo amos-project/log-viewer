@@ -1,4 +1,4 @@
-chrome.runtime.onInstalled.addListener(details => {
+chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: 'json-view',
     title: 'JSON view',
