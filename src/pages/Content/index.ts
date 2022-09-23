@@ -50,6 +50,10 @@ background: #fff;
 white-space: pre;
 z-index: 10000;
 padding: 20px;
+font-family: monospace;
+line-height: 1.5em;
+background: #2e353b;
+color: #f9d45c;
 `;
 
 let id = 0;
