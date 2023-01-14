@@ -5,6 +5,12 @@ chrome.runtime.onInstalled.addListener((details) => {
     type: 'normal',
     contexts: ['all'],
   });
+  chrome.contextMenus.create({
+    id: 'xterm-view',
+    title: 'Xterm view',
+    type: 'normal',
+    contexts: ['all'],
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -12,6 +18,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
   chrome.tabs.sendMessage(tab?.id, {
-    action: 'json-view',
+    action: info.menuItemId,
   });
 });
