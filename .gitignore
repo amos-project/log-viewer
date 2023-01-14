@@ -21,3 +21,5 @@
 secrets.*.js
 .idea/
 *.pem
+
+/json-dom-node-*
