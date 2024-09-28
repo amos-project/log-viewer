@@ -10,8 +10,7 @@
   "scripts": {
     "build": "node utils/build.js",
     "start": "node utils/webserver.js",
-    "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'",
-    "zip": "rm -rf json-dom-node-* && pnpm run build && cp -r build json-dom-node-$(jq -r .version package.json) && zip -r json-dom-node-$(jq -r .version package.json).zip json-dom-node-$(jq -r .version package.json)"
+    "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
