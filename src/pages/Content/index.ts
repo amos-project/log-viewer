@@ -1,8 +1,169 @@
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { ISearchDecorationOptions, SearchAddon } from 'xterm-addon-search';
-import { WebLinksAddon } from 'xterm-addon-web-links';
-import 'xterm/css/xterm.css';
+import { detectType } from '../../shared/utils';
+
+export async function getTargetText(
+  targetElement: HTMLElement | undefined | 'clipboard'
+) {
+  if (targetElement === 'clipboard') {
+    return await navigator.clipboard.readText();
+  }
+  return (
+    document.getSelection()?.toString()?.trim() ||
+    targetElement?.innerText ||
+    ''
+  );
+}
+
+export async function getCode() {
+  const r = await fetch('');
+  const content = await r.text();
+  const contentType = r.headers.get('content-type') || '';
+  return [content, contentType] as const;
+}
+
+let iframeContainer: HTMLDivElement;
+let iframe: HTMLIFrameElement;
+const iframeSrc = chrome.runtime.getURL('popup.html');
+
+function excludeJsonView<T>(fn: () => T): T {
+  if (iframeContainer?.parentNode) {
+    iframeContainer.parentNode.removeChild(iframeContainer);
+    const value = fn();
+    document.body.appendChild(iframeContainer);
+    return value;
+  }
+  return fn();
+}
+
+export function getHtml() {
+  return excludeJsonView(() => document.documentElement.outerHTML);
+}
+
+export function getTextContent() {
+  return excludeJsonView(() => document.body.textContent || '');
+}
+
+export function getIframe(): HTMLIFrameElement {
+  if (iframe) {
+    if (!iframeContainer.parentNode) {
+      document.body.appendChild(iframeContainer);
+    }
+    return iframe;
+  }
+  iframeContainer = document.createElement('div');
+  iframeContainer.style.cssText = `
+position: fixed;
+top: 0;
+bottom: 0;
+right: 0;
+width: 100vw;
+z-index: 99999;
+overflow: hidden;
+border: 1px solid #000000;
+`;
+  iframe = document.createElement('iframe');
+  iframe.width = '100%';
+  iframe.height = '100%';
+  iframe.style.cssText = `border: none;`;
+
+  const close = () => {
+    iframeContainer.parentNode?.removeChild(iframeContainer);
+    action = void 0;
+  };
+  const open = () => {
+    if (action) {
+      iframe.contentWindow?.postMessage(action, '*');
+      action = void 0;
+    }
+  };
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      close();
+    }
+  });
+  window.addEventListener('message', (e) => {
+    switch (e.data.action) {
+      case 'close-json-view':
+        close();
+        break;
+      case 'open-json-view':
+        open();
+        break;
+    }
+  });
+  iframe.src = iframeSrc;
+  iframeContainer.appendChild(iframe);
+  return getIframe();
+}
+
+let action: JsonViewAction | undefined;
+
+export interface JsonViewAction {
+  type: 'json' | 'xterm' | 'code';
+  content: string;
+  contentType: string;
+  url: string;
+}
+
+const styles: Record<JsonViewAction['type'], Partial<CSSStyleDeclaration>> = {
+  json: { width: '50vw', borderLeft: '1px solid #000' },
+  xterm: { width: '100vw', borderLeft: 'none' },
+  code: { width: '100vw', borderLeft: 'none' },
+};
+
+export async function showJsonView(
+  type: JsonViewAction['type'],
+  content: string,
+  contentType: string = ''
+) {
+  content = content.trim();
+  if (!content) {
+    return;
+  }
+  const iframe = getIframe();
+  Object.assign(iframeContainer.style, styles[type]);
+  action = {
+    type,
+    content,
+    contentType,
+    url: location.href,
+  };
+  iframe.contentWindow?.postMessage(action, '*');
+}
+
+export interface ContextEvent {
+  action: 'json-view' | 'xterm-view' | 'html-view' | 'code-view';
+}
+
+async function render(action: ContextEvent['action'], src?: 'clipboard') {
+  switch (action) {
+    case 'json-view':
+      await showJsonView('json', await getTargetText(src || targetElement));
+      break;
+    case 'xterm-view':
+      await showJsonView('xterm', getTextContent());
+      break;
+    case 'html-view':
+      await showJsonView('code', getHtml(), 'text/html');
+      break;
+    case 'code-view':
+      const [content, contentType] = await getCode();
+      await showJsonView('code', content, contentType);
+      break;
+  }
+}
+
+const accepts: Record<string, ContextEvent['action']> = {
+  v: 'json-view',
+  x: 'xterm-view',
+  h: 'html-view',
+  c: 'code-view',
+  p: 'json-view',
+};
+
+const sources: Record<string, 'clipboard'> = {
+  p: 'clipboard',
+};
 
 let targetElement: HTMLElement | undefined;
 
@@ -12,191 +173,57 @@ let targetElement: HTMLElement | undefined;
     if (e.target instanceof HTMLElement) {
       targetElement = e.target;
     }
-  }),
+  })
 );
 
-function getTargetText() {
-  return (
-    document.getSelection()?.toString()?.trim() ||
-    targetElement?.innerText ||
-    ''
+const shouldAuto = (type: string) => {
+  return /css|yaml|yml|js|javascript|xml|json|markdown|patch|diff|jsx|mjs|tsx|typescript|sql/i.test(
+    type
   );
-}
+};
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case 'json-view':
-      jsonView();
-      break;
-    case 'xterm-view':
-      xtermView();
-      break;
-  }
-});
+const shouldNot = (type: string) => {
+  return /html|image|video|audio/i.test(type);
+};
 
+chrome.runtime.onMessage.addListener((message) => render(message.action));
+
+chrome.runtime
+  .sendMessage({
+    type: 'json-view-ready',
+  })
+  .then((r) => {
+    if (shouldNot(r.contentType)) {
+      return;
+    }
+    if (shouldAuto(r.contentType) || shouldAuto(detectType(location.href))) {
+      return render('code-view');
+    }
+  });
+
+let lastKey = '';
 let lastTime = 0;
-document.addEventListener('keypress', (e) => {
-  if (e.key === 'v') {
-    const now = Date.now();
-    if (now - lastTime < 300) {
-      jsonView();
-    }
-    lastTime = now;
+
+document.addEventListener('keydown', async (e) => {
+  if (
+    document.activeElement instanceof HTMLInputElement ||
+    document.activeElement instanceof HTMLTextAreaElement
+  ) {
+    return;
+  }
+  const oldKey = lastKey;
+  const oldTime = lastTime;
+  lastKey = e.key;
+  lastTime = Date.now();
+  if (!accepts[lastKey] || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+    lastKey = '';
+    lastTime = 0;
+    return;
+  }
+  if (lastKey !== oldKey) {
+    return;
+  }
+  if (lastTime - oldTime < 300) {
+    await render(accepts[e.key], sources[e.key]);
   }
 });
-
-let jsonElement = document.createElement('div');
-jsonElement.style.cssText = `
-position: absolute;
-top: 0;
-right: 0;
-width: auto;
-max-width: 60vw;
-max-height: 100vh;
-overflow: auto;
-border: 1px solid #000;
-background: #fff;
-white-space: pre;
-z-index: 10000;
-padding: 20px;
-font-family: monospace;
-line-height: 1.5em;
-background: #2e353b;
-color: #f9d45c;
-`;
-
-let id = 0;
-
-document.addEventListener('click', (e) => {
-  if (e.target === jsonElement) {
-    return;
-  }
-  if (jsonElement.parentNode) {
-    document.body.removeChild(jsonElement);
-  }
-});
-
-function prettyJson(value: any, map: Map<number, string>, depth: number) {
-  const str = JSON.stringify(
-    value,
-    (key, value1) => {
-      if (typeof value !== 'string' || !/^[\[{]/.test(value)) {
-        return value1;
-      }
-      try {
-        const json = JSON.parse(value1);
-        const uid = ++id;
-        map.set(uid, prettyJson(json, map, depth + 1));
-        return `$__${uid}__$`;
-      } catch {
-        return value1;
-      }
-    },
-    2,
-  );
-  const indent = '  '.repeat((depth + 1) * 2);
-  return str
-    .replace(/\$__(\d+)__\$/g, ($0, $1) => {
-      const v = map.get(+$1) || '';
-      return v.replace(/\n/g, indent);
-    })
-    .replace(/\\n/g, '\n' + indent + '  ')
-    .replace(/\\t/g, '  ');
-}
-
-function jsonView() {
-  const text = getTargetText();
-  if (!text) {
-    return;
-  }
-  let data = text;
-  const tempMap = new Map<number, string>();
-  try {
-    data = prettyJson(JSON.parse(text), tempMap, 0);
-  } catch {
-    data = data.replace(/-(?=[,}\]])/g, '-0');
-    try {
-      data = prettyJson(JSON.parse(text), tempMap, 0);
-    } catch {
-    }
-  }
-  jsonElement.innerText = data;
-  document.body.appendChild(jsonElement);
-}
-
-let xtermInited = false;
-
-async function xtermView() {
-  if (xtermInited) {
-    return;
-  }
-  xtermInited = true;
-  const terminal = new Terminal({
-    convertEol: true,
-    scrollback: 1000000,
-    allowProposedApi: true,
-    theme: {
-      selectionBackground: 'rgba(222, 195, 138, 0.8)',
-    },
-  });
-  terminal.loadAddon(new WebLinksAddon());
-  const searchAddon = new SearchAddon();
-  terminal.loadAddon(searchAddon);
-  const fitAddon = new FitAddon();
-  terminal.loadAddon(fitAddon);
-
-  const content = document.body.textContent || '';
-  document.body.innerHTML = '';
-  const container = document.createElement('div');
-  container.style.cssText = 'height: calc(100vh - 80px)';
-  document.body.appendChild(container);
-  terminal.open(container);
-  terminal.write(content);
-  fitAddon.fit();
-  terminal.scrollToTop();
-
-  const input = document.createElement('input');
-  input.placeholder = 'Search...';
-  input.style.cssText = 'margin: 20px;';
-  const inputContainer = document.createElement('div');
-  inputContainer.appendChild(input);
-  inputContainer.style.cssText = 'text-align: right; font-family: monospace;';
-  const searchResultSpan = document.createElement('span');
-  inputContainer.appendChild(searchResultSpan);
-  document.body.insertBefore(inputContainer, container);
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const options: ISearchDecorationOptions = {
-        activeMatchColorOverviewRuler: '',
-        matchOverviewRuler: '',
-        matchBackground: 'rgb(59, 88, 63)',
-        activeMatchBackground: 'rgb(222, 195, 138)',
-      };
-      if (input.value) {
-        if (e.shiftKey) {
-          searchAddon.findPrevious(input.value, { decorations: options });
-        } else {
-          searchAddon.findNext(input.value, { decorations: options });
-        }
-      } else {
-        searchAddon.clearDecorations();
-        searchResultSpan.innerHTML = '';
-      }
-    }
-  });
-  searchAddon.onDidChangeResults((e) => {
-    if (!e) {
-      searchResultSpan.innerHTML = `Too many results`;
-    } else {
-      searchResultSpan.innerHTML = `${Math.max(e.resultIndex, 0) + 1}/${e.resultCount}`;
-    }
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'f' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      input.focus();
-      input.select();
-    }
-  });
-}
