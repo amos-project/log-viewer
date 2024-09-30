@@ -5,25 +5,49 @@
   "background": {
     "service_worker": "background.bundle.js"
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon-34.png"
   },
-  "permissions": ["contextMenus", "webRequest"],
-  "host_permissions": ["http://*/*", "https://*/*", "<all_urls>"],
+  "permissions": [
+    "contextMenus",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "<all_urls>"
+  ],
   "icons": {
     "128": "icon-128.png"
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
-      "js": ["contentScript.bundle.js"]
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"
+      ],
+      "js": [
+        "contentScript.bundle.js"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icon-128.png", "icon-34.png", "popup.html"],
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"]
+      "resources": [
+        "icon-128.png",
+        "icon-34.png",
+        "popup.html"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"
+      ]
     }
   ]
 }

@@ -27,3 +27,10 @@ export function detectUrlExt(url: string): string {
   }
   return Object.entries(seen).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 }
+
+export function omitAsync<A extends any[], R, T>(fn: (...args: A) => R, res: T) {
+  return (...args: A) => {
+    Promise.resolve().then(() => fn(...args));
+    return res;
+  }
+}

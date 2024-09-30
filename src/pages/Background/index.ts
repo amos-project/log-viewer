@@ -9,6 +9,7 @@ import { Renderer } from './types';
 import { jsonRender } from './renderers/json_render';
 import { codeRender } from './renderers/code_render';
 import { ansiRender } from './renderers/ansi_render';
+import { omitAsync } from '../../shared/utils';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -69,7 +70,7 @@ const renderers: Record<JsonViewAction['type'], Renderer> = {
 };
 
 chrome.runtime.onMessage.addListener(
-  async (message: JsonAction, sender, sendResponse) => {
+  omitAsync(async (message: JsonAction, sender, sendResponse) => {
     switch (message.type) {
       case 'json-view-ready':
         if (!sender.tab?.id) {
@@ -86,7 +87,6 @@ chrome.runtime.onMessage.addListener(
             const res = await renderer(message);
             sendResponse(res);
           } catch (e: any) {
-            console.log('Faield', e);
             sendResponse({
               style: '',
               content: '',
@@ -98,5 +98,5 @@ chrome.runtime.onMessage.addListener(
         }
         break;
     }
-  }
+  }, true)
 );

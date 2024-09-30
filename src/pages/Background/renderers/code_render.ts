@@ -13,9 +13,8 @@ import yamlPlugin from 'prettier/plugins/yaml';
 import markdownPlugin from 'prettier/plugins/markdown';
 import graphqlPlugin from 'prettier/plugins/graphql';
 import { detectUrlExt } from '../../../shared/utils';
-import style from 'highlight.js/styles/github-dark-dimmed.min.css?raw';
 import mime from 'mime';
-import hljs from 'highlight.js';
+import { bundledLanguages, codeToHtml } from 'shiki';
 
 const plugins = [
   estreePlugin,
@@ -42,11 +41,8 @@ type ParserType =
   | 'mdx'
   | 'graphql';
 
-const parserMap: Record<
-  ParserType,
-  { ext?: string[]; mime?: string[]; denyMime?: string[] }
-> = {
-  babel: { mime: ['application/javascript'], ext: [] },
+const parserMap: Record<ParserType, { ext?: string[]; mime?: string[]; denyMime?: string[] }> = {
+  babel: { mime: ['application/javascript', 'text/javascript'], ext: [] },
   'babel-ts': {
     mime: [],
     ext: ['ts', 'tsx', 'mts', 'cts', 'mtsx', 'ctsx'],
@@ -89,7 +85,7 @@ function getPrettierParser(ext: string) {
 
 export function detectContentTypeExt(contentType: string) {
   const ext = mime.getExtension(contentType);
-  return ext === 'bin' ? '' : ext || '';
+  return ext === 'bin' || ext === 'txt' ? '' : ext || '';
 }
 
 export const codeRender: Renderer = async ({ content, contentType, url }) => {
@@ -98,22 +94,24 @@ export const codeRender: Renderer = async ({ content, contentType, url }) => {
   let error = '';
   if (parser) {
     try {
-      content = await prettier.format(content, { parser: parser, plugins });
+      content = await prettier.format(content, {
+        parser: parser,
+        plugins,
+        printWidth: 200,
+        tabWidth: 4,
+      });
     } catch (e: any) {
       error = (e?.stack || e) + '';
     }
   }
-  const lang = hljs.getLanguage(ext);
-  if (lang?.name) {
-    content = hljs.highlight(content, {
-      language: lang.name,
-      ignoreIllegals: true,
-    }).value;
-  } else {
-    content = hljs.highlightAuto(content).value;
+  if (ext in bundledLanguages) {
+    content = await codeToHtml(content, {
+      lang: ext,
+      theme: 'vitesse-dark',
+    });
   }
   return {
-    style: style,
+    style: '',
     content: content,
     error: error,
   };

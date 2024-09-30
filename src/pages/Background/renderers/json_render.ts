@@ -4,6 +4,7 @@
  */
 
 import { Renderer } from '../types';
+import { codeToHtml } from 'shiki';
 
 let id = 0;
 
@@ -11,7 +12,7 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
   const str = JSON.stringify(
     value,
     (key, value1) => {
-      if (typeof value !== 'string' || !/^[[{]/.test(value)) {
+      if (typeof value1 !== "string" || !/^[[{]/.test(value1)) {
         return value1;
       }
       try {
@@ -25,34 +26,52 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
     },
     2
   );
-  const indent = '  '.repeat((depth + 1) * 2);
+  const indent = "  ".repeat((depth + 1) * 2);
   return str
     .replace(/\$__(\d+)__\$/g, ($0, $1) => {
-      const v = map.get(+$1) || '';
-      return v.replace(/\n/g, indent);
+      const v = map.get(+$1) || "";
+      return v.replace(/\n/g, "\n  " + indent);
     })
-    .replace(/\\n/g, '\n' + indent + '  ')
-    .replace(/\\t/g, '  ');
+    .split("\n")
+    .map((v) => {
+      const prefix = v.match(/^\s*/)![0];
+      return v.replace(/\\n/g, "\n  " + prefix);
+    })
+    .join("\n")
+    .replace(/\\t/g, "  ");
 }
 
-export const jsonRender: Renderer = ({ content }) => {
-  let data = content;
+function prettyString(text: string) {
+  if(/^.*?\{.*\}\s*$/.test(text)) {
+    return text.replace(/(^.*?{)(.*)(}\s*$)/, ($0, $1, $2, $3) => {
+      return $1 + "\n  " + $2.replace(/\s*,\s*/g, ',\n  ') + '\n' + $3;
+    })
+  }
+  return text;
+}
+
+export const jsonRender: Renderer = async ({ content }) => {
   let error = '';
   const tempMap = new Map<number, string>();
   try {
-    data = prettyJson(JSON.parse(data), tempMap, 0);
+    content = prettyJson(JSON.parse(content), tempMap, 0);
   } catch (e: any) {
     error = (e?.stack || e) + '';
-    data = data.replace(/-(?=[,}\]])/g, '-0');
+    content = content.replace(/-(?=[,}\]])/g, "-0");
     try {
-      data = prettyJson(JSON.parse(data), tempMap, 0);
+      content = prettyJson(JSON.parse(content), tempMap, 0);
     } catch (e: any) {
-      error ||= (e?.stack || e) + '';
+      error = (e?.stack || e) + '';
+      content = prettyString(content);
     }
   }
+  content = await codeToHtml(content, {
+    lang: 'json',
+    theme: 'vitesse-dark',
+  });
   return {
-    style: '',
-    content: data,
     error: error,
+    content: content,
+    style: '',
   };
 };

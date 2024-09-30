@@ -1,21 +1,12 @@
 import { detectUrlExt } from '../../shared/utils';
-import {
-  ContextEvent,
-  JsonViewAction,
-  JsonViewResponse,
-} from '../../shared/types';
+import { ContextEvent, JsonViewAction, JsonViewResponse } from '../../shared/types';
+import commonStyle from './index.css?raw';
 
-export async function getTargetText(
-  targetElement: HTMLElement | undefined | 'clipboard'
-) {
+export async function getTargetText(targetElement: HTMLElement | undefined | 'clipboard') {
   if (targetElement === 'clipboard') {
     return await navigator.clipboard.readText();
   }
-  return (
-    document.getSelection()?.toString()?.trim() ||
-    targetElement?.innerText ||
-    ''
-  );
+  return document.getSelection()?.toString()?.trim() || targetElement?.innerText || '';
 }
 
 export async function getCode() {
@@ -25,24 +16,31 @@ export async function getCode() {
   return [content, contentType] as const;
 }
 
-let styleElem: HTMLStyleElement | undefined;
-let htmlElem: HTMLDivElement | undefined;
+let styleElem: HTMLStyleElement;
+let htmlElem: HTMLDivElement;
 
 const close = () => {
   if (htmlElem?.parentNode) {
+    htmlElem.innerHTML = '';
     htmlElem.parentNode.removeChild(htmlElem);
   }
   if (styleElem?.parentNode) {
+    styleElem.innerHTML = commonStyle;
     styleElem.parentNode.removeChild(styleElem);
   }
 };
 
-const open = () => {
+const open = (view?: string) => {
   if (!styleElem!.parentNode) {
+    styleElem!.innerHTML = commonStyle;
     document.head.appendChild(styleElem!);
   }
   if (!htmlElem!.parentNode) {
+    htmlElem!.innerHTML = '';
     document.body.appendChild(htmlElem!);
+  }
+  if (view) {
+    htmlElem!.className = `json-view-container ${view}`;
   }
 };
 
@@ -64,48 +62,12 @@ export function getTextContent() {
   return excludeJsonView(() => document.body.textContent || '');
 }
 
-export function prepareElem(): readonly [HTMLDivElement, HTMLStyleElement] {
-  if (htmlElem && styleElem) {
-    open();
-    return [htmlElem, styleElem] as const;
-  }
-  htmlElem = document.createElement('div');
-  styleElem = document.createElement('style');
-  htmlElem.classList.add('json-view-container');
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      close();
-    }
-  });
-  window.addEventListener('click', (e) => {
-    if (e.target instanceof Node && !htmlElem!.contains(e.target)) {
-      close();
-    }
-  });
-  return prepareElem();
-}
-
-const baseStyle = `
-`;
-
-export async function showJsonView(
-  type: JsonViewAction['type'],
-  content: string,
-  contentType: string = '',
-  url: string = location.href
-) {
-  content = content.trim();
-  if (!content) {
-    return;
-  }
-  const [htmlElem, styleElem] = prepareElem();
-  const action: JsonViewAction = { type, content, contentType, url };
-  const res: JsonViewResponse = await chrome.runtime.sendMessage(action);
-  htmlElem.innerHTML = (res.error ? res.error + '\n\n' : '') + res.content;
-  styleElem.innerHTML = res.style;
-}
+let taskId = 0;
 
 async function render(action: ContextEvent['action'], src?: 'clipboard') {
+  const id = prepareElem(action);
+
+  htmlElem.innerHTML = `Loading (${id})...`;
   switch (action) {
     case 'json-view':
       await showJsonView('json', await getTargetText(src || targetElement));
@@ -120,6 +82,58 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
       const [content, contentType] = await getCode();
       await showJsonView('code', content, contentType);
       break;
+  }
+
+  function prepareElem(view: string): number {
+    if (htmlElem && styleElem) {
+      open(view);
+      return ++taskId;
+    }
+    htmlElem = document.createElement('div');
+    styleElem = document.createElement('style');
+    htmlElem.classList.add('json-view-container');
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        close();
+      }
+    });
+    window.addEventListener('click', (e) => {
+      if (e.target instanceof Node && !htmlElem!.contains(e.target)) {
+        close();
+      }
+    });
+    return prepareElem(view);
+  }
+
+  async function showJsonView(
+    type: JsonViewAction['type'],
+    content: string,
+    contentType: string = '',
+    url: string = location.href
+  ) {
+    if (taskId !== id) {
+      return;
+    }
+    content = content.trim();
+    if (!content) {
+      htmlElem.innerHTML = '';
+      return;
+    }
+    const action: JsonViewAction = { type, content, contentType, url };
+    let size = content.length;
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let unitIdx = 0;
+    while (size > 1024) {
+      size /= 1024;
+      unitIdx++;
+    }
+    htmlElem.innerHTML = `Loading ${unitIdx === 0 ? size : size.toFixed(1)}${units[unitIdx]} (${id})...`;
+    const res: JsonViewResponse = await chrome.runtime.sendMessage(action);
+    if (taskId !== id) {
+      return;
+    }
+    htmlElem.innerHTML = (res.error ? `<div style="color:#c00">${res.error}</div>` + '\n\n' : '') + res.content;
+    styleElem.innerHTML = commonStyle + '\n' + res.style;
   }
 }
 

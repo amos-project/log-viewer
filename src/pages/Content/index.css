@@ -1,0 +1,39 @@
+.json-view-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: #121212;
+  color: white;
+  font-family: monospace;
+  line-height: 1.5em;
+  font-size: 12px;
+  z-index: 999999;
+  padding: 20px;
+}
+
+.json-view-container.json-view {
+  left: 50%;
+}
+
+.json-view-container > pre {
+  margin: 0;
+}
+
+.json-view-container > pre > code {
+  counter-reset: step;
+  counter-increment: step 0;
+}
+
+.json-view-container > pre > code > .line::before {
+  content: counter(step);
+  counter-increment: step;
+  width: 1rem;
+  margin-right: 1.5rem;
+  display: inline-block;
+  text-align: right;
+  color: rgba(115, 138, 148, .4);
+}

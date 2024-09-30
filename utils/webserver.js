@@ -9,29 +9,11 @@ const WebpackDevServer = require('webpack-dev-server'),
   env = require('./env'),
   path = require('path');
 
-const options = {
-  notHotReload: ['background', 'contentScript', 'devtools'],
-};
-const excludeEntriesToHotReload = options.notHotReload || [];
-
-for (const entryName in config.entry) {
-  if (excludeEntriesToHotReload.indexOf(entryName) === -1) {
-    config.entry[entryName] = [
-      'webpack/hot/dev-server',
-      `webpack-dev-server/client?hot=true&hostname=localhost&port=${env.PORT}`,
-    ].concat(config.entry[entryName]);
-  }
-}
-
-config.plugins = [new webpack.HotModuleReplacementPlugin()].concat(
-  config.plugins || []
-);
-
 const compiler = webpack(config);
 
 const server = new WebpackDevServer(
   {
-    hot: true,
+    hot: false,
     client: false,
     host: 'localhost',
     port: env.PORT,
@@ -49,10 +31,6 @@ const server = new WebpackDevServer(
   },
   compiler
 );
-
-if (process.env.NODE_ENV === 'development' && module.hot) {
-  module.hot.accept();
-}
 
 (async () => {
   await server.start();

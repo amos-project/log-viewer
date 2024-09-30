@@ -8,18 +8,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const ASSET_PATH = process.env.ASSET_PATH || '/';
 
-const fileExtensions = [
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'eot',
-  'otf',
-  'svg',
-  'ttf',
-  'woff',
-  'woff2',
-];
+const fileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2'];
 
 const options = {
   mode: process.env.NODE_ENV || 'development',
@@ -33,6 +22,7 @@ const options = {
     path: path.resolve(__dirname, 'build'),
     clean: true,
     publicPath: ASSET_PATH,
+    chunkFormat: false,
   },
   module: {
     rules: [
@@ -50,6 +40,15 @@ const options = {
               {
                 loader: 'style-loader',
               },
+              {
+                loader: 'css-loader',
+              },
+              {
+                loader: 'sass-loader',
+                options: {
+                  sourceMap: true,
+                },
+              },
             ],
           },
           {
@@ -63,26 +62,6 @@ const options = {
             exclude: /node_modules/,
           },
           { test: /\.(ts|tsx)$/, loader: 'ts-loader', exclude: /node_modules/ },
-        ],
-      },
-      {
-        oneOf: [
-          {
-            // look for .css or .scss files
-            test: /\.(css|scss)$/,
-            // in the `src` directory
-            use: [
-              {
-                loader: 'css-loader',
-              },
-              {
-                loader: 'sass-loader',
-                options: {
-                  sourceMap: true,
-                },
-              },
-            ],
-          },
         ],
       },
     ],
