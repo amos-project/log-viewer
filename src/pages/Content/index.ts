@@ -1,4 +1,9 @@
-import { detectType } from '../../shared/utils';
+import { detectUrlExt } from '../../shared/utils';
+import {
+  ContextEvent,
+  JsonViewAction,
+  JsonViewResponse,
+} from '../../shared/types';
 
 export async function getTargetText(
   targetElement: HTMLElement | undefined | 'clipboard'
@@ -20,15 +25,32 @@ export async function getCode() {
   return [content, contentType] as const;
 }
 
-let iframeContainer: HTMLDivElement;
-let iframe: HTMLIFrameElement;
-const iframeSrc = chrome.runtime.getURL('popup.html');
+let styleElem: HTMLStyleElement | undefined;
+let htmlElem: HTMLDivElement | undefined;
+
+const close = () => {
+  if (htmlElem?.parentNode) {
+    htmlElem.parentNode.removeChild(htmlElem);
+  }
+  if (styleElem?.parentNode) {
+    styleElem.parentNode.removeChild(styleElem);
+  }
+};
+
+const open = () => {
+  if (!styleElem!.parentNode) {
+    document.head.appendChild(styleElem!);
+  }
+  if (!htmlElem!.parentNode) {
+    document.body.appendChild(htmlElem!);
+  }
+};
 
 function excludeJsonView<T>(fn: () => T): T {
-  if (iframeContainer?.parentNode) {
-    iframeContainer.parentNode.removeChild(iframeContainer);
+  if (styleElem?.parentNode && htmlElem?.parentNode) {
+    close();
     const value = fn();
-    document.body.appendChild(iframeContainer);
+    open();
     return value;
   }
   return fn();
@@ -42,97 +64,45 @@ export function getTextContent() {
   return excludeJsonView(() => document.body.textContent || '');
 }
 
-export function getIframe(): HTMLIFrameElement {
-  if (iframe) {
-    if (!iframeContainer.parentNode) {
-      document.body.appendChild(iframeContainer);
-    }
-    return iframe;
+export function prepareElem(): readonly [HTMLDivElement, HTMLStyleElement] {
+  if (htmlElem && styleElem) {
+    open();
+    return [htmlElem, styleElem] as const;
   }
-  iframeContainer = document.createElement('div');
-  iframeContainer.style.cssText = `
-position: fixed;
-top: 0;
-bottom: 0;
-right: 0;
-width: 100vw;
-z-index: 99999;
-overflow: hidden;
-border: 1px solid #000000;
-`;
-  iframe = document.createElement('iframe');
-  iframe.width = '100%';
-  iframe.height = '100%';
-  iframe.style.cssText = `border: none;`;
-
-  const close = () => {
-    iframeContainer.parentNode?.removeChild(iframeContainer);
-    action = void 0;
-  };
-  const open = () => {
-    if (action) {
-      iframe.contentWindow?.postMessage(action, '*');
-      action = void 0;
-    }
-  };
-
+  htmlElem = document.createElement('div');
+  styleElem = document.createElement('style');
+  htmlElem.classList.add('json-view-container');
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       close();
     }
   });
-  window.addEventListener('message', (e) => {
-    switch (e.data.action) {
-      case 'close-json-view':
-        close();
-        break;
-      case 'open-json-view':
-        open();
-        break;
+  window.addEventListener('click', (e) => {
+    if (e.target instanceof Node && !htmlElem!.contains(e.target)) {
+      close();
     }
   });
-  iframe.src = iframeSrc;
-  iframeContainer.appendChild(iframe);
-  return getIframe();
+  return prepareElem();
 }
 
-let action: JsonViewAction | undefined;
-
-export interface JsonViewAction {
-  type: 'json' | 'xterm' | 'code';
-  content: string;
-  contentType: string;
-  url: string;
-}
-
-const styles: Record<JsonViewAction['type'], Partial<CSSStyleDeclaration>> = {
-  json: { width: '50vw', borderLeft: '1px solid #000' },
-  xterm: { width: '100vw', borderLeft: 'none' },
-  code: { width: '100vw', borderLeft: 'none' },
-};
+const baseStyle = `
+`;
 
 export async function showJsonView(
   type: JsonViewAction['type'],
   content: string,
-  contentType: string = ''
+  contentType: string = '',
+  url: string = location.href
 ) {
   content = content.trim();
   if (!content) {
     return;
   }
-  const iframe = getIframe();
-  Object.assign(iframeContainer.style, styles[type]);
-  action = {
-    type,
-    content,
-    contentType,
-    url: location.href,
-  };
-  iframe.contentWindow?.postMessage(action, '*');
-}
-
-export interface ContextEvent {
-  action: 'json-view' | 'xterm-view' | 'html-view' | 'code-view';
+  const [htmlElem, styleElem] = prepareElem();
+  const action: JsonViewAction = { type, content, contentType, url };
+  const res: JsonViewResponse = await chrome.runtime.sendMessage(action);
+  htmlElem.innerHTML = (res.error ? res.error + '\n\n' : '') + res.content;
+  styleElem.innerHTML = res.style;
 }
 
 async function render(action: ContextEvent['action'], src?: 'clipboard') {
@@ -140,8 +110,8 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
     case 'json-view':
       await showJsonView('json', await getTargetText(src || targetElement));
       break;
-    case 'xterm-view':
-      await showJsonView('xterm', getTextContent());
+    case 'ansi-view':
+      await showJsonView('ansi', getTextContent());
       break;
     case 'html-view':
       await showJsonView('code', getHtml(), 'text/html');
@@ -155,7 +125,7 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
 
 const accepts: Record<string, ContextEvent['action']> = {
   v: 'json-view',
-  x: 'xterm-view',
+  x: 'ansi-view',
   h: 'html-view',
   c: 'code-view',
   p: 'json-view',
@@ -188,18 +158,14 @@ const shouldNot = (type: string) => {
 
 chrome.runtime.onMessage.addListener((message) => render(message.action));
 
-chrome.runtime
-  .sendMessage({
-    type: 'json-view-ready',
-  })
-  .then((r) => {
-    if (shouldNot(r.contentType)) {
-      return;
-    }
-    if (shouldAuto(r.contentType) || shouldAuto(detectType(location.href))) {
-      return render('code-view');
-    }
-  });
+chrome.runtime.sendMessage({ type: 'json-view-ready' }).then((r) => {
+  if (shouldNot(r.contentType)) {
+    return;
+  }
+  if (shouldAuto(r.contentType) || shouldAuto(detectUrlExt(location.href))) {
+    return render('code-view');
+  }
+});
 
 let lastKey = '';
 let lastTime = 0;
@@ -207,7 +173,8 @@ let lastTime = 0;
 document.addEventListener('keydown', async (e) => {
   if (
     document.activeElement instanceof HTMLInputElement ||
-    document.activeElement instanceof HTMLTextAreaElement
+    document.activeElement instanceof HTMLTextAreaElement ||
+    (document.activeElement as HTMLElement | null)?.isContentEditable
   ) {
     return;
   }

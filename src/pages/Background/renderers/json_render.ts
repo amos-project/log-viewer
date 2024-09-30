@@ -1,10 +1,9 @@
 /*
- * @since 2024-09-27 20:13:09
+ * @since 2024-09-29 15:22:47
  * @author junbao <junbao@moego.pet>
  */
 
-import React, { memo, useMemo } from 'react';
-import { JsonViewAction } from '../Content';
+import { Renderer } from '../types';
 
 let id = 0;
 
@@ -36,26 +35,24 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
     .replace(/\\t/g, '  ');
 }
 
-export const JsonView = memo<JsonViewAction>(({ content }) => {
-  const json = useMemo(() => {
-    let data = content;
-    const tempMap = new Map<number, string>();
+export const jsonRender: Renderer = ({ content }) => {
+  let data = content;
+  let error = '';
+  const tempMap = new Map<number, string>();
+  try {
+    data = prettyJson(JSON.parse(data), tempMap, 0);
+  } catch (e: any) {
+    error = (e?.stack || e) + '';
+    data = data.replace(/-(?=[,}\]])/g, '-0');
     try {
       data = prettyJson(JSON.parse(data), tempMap, 0);
-    } catch {
-      data = data.replace(/-(?=[,}\]])/g, '-0');
-      try {
-        data = prettyJson(JSON.parse(data), tempMap, 0);
-      } catch {}
+    } catch (e: any) {
+      error ||= (e?.stack || e) + '';
     }
-    return data;
-  }, [content]);
-  return (
-    <div
-      style={{
-        padding: '20px',
-      }}
-      dangerouslySetInnerHTML={{ __html: json }}
-    />
-  );
-});
+  }
+  return {
+    style: '',
+    content: data,
+    error: error,
+  };
+};

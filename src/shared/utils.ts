@@ -3,7 +3,7 @@
  * @author junbao <junbao@moego.pet>
  */
 
-export function detectType(url: string): string {
+export function detectUrlExt(url: string): string {
   if (!url) {
     return '';
   }

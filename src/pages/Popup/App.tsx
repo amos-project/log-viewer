@@ -1,50 +1,58 @@
-import React, { ComponentType, useEffect, useState } from 'react';
-import { JsonView } from './JsonView';
-import { XtermView } from './XtermView';
-import { CodeView } from './CodeView';
-import { JsonViewAction } from '../Content';
-
-const views: Record<JsonViewAction['type'], ComponentType<JsonViewAction>> = {
-  json: JsonView,
-  xterm: XtermView,
-  code: CodeView,
-};
+import React, { useEffect, useState } from 'react';
+import {
+  CONFIG_KEY,
+  Configuration,
+  defaultConfiguration,
+} from '../../shared/types';
 
 export const App = () => {
-  const [action, setAction] = useState<JsonViewAction>();
+  const [config, setConfig] = useState<Configuration>(defaultConfiguration);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const send = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        window.parent?.postMessage(
-          {
-            action: 'close-json-view',
-          },
-          '*'
-        );
+    const listener: Parameters<
+      chrome.storage.StorageAreaChangedEvent['addListener']
+    >[0] = (changes) => {
+      if (changes[CONFIG_KEY]) {
+        setConfig(changes[CONFIG_KEY].newValue);
       }
     };
-    window.addEventListener('keydown', send);
-    const receive = (e: MessageEvent) => {
-      const action: JsonViewAction = e.data;
-      if (views[action.type]) {
-        setAction(action);
-      }
-    };
-    window.addEventListener('message', receive);
-    window.parent?.postMessage(
-      {
-        action: 'open-json-view',
-      },
-      '*'
-    );
+    chrome.storage.sync.onChanged.addListener(listener);
+    chrome.storage.sync.get(CONFIG_KEY).then((r) => {
+      setConfig(r[CONFIG_KEY] || defaultConfiguration);
+      setLoading(false);
+    });
     return () => {
-      window.removeEventListener('message', receive);
-      window.removeEventListener('keydown', send);
+      chrome.storage.sync.onChanged.removeListener(listener);
     };
   }, []);
-  const View = views[action?.type!];
-  if (View) {
-    return <View {...action!} />;
-  }
-  return null;
+  const handleUpdate = (key: keyof Configuration) => {
+    return () => {
+      const newConfig = { ...config, [key]: !config[key] };
+      setLoading(true);
+      chrome.storage.sync.set({ [CONFIG_KEY]: newConfig }).then(() => {
+        setLoading(false);
+      });
+    };
+  };
+  return (
+    <div>
+      <div>
+        <span>Enable auto view</span>
+        <input
+          type="checkbox"
+          checked={config.enableAutoView}
+          onChange={handleUpdate('enableAutoView')}
+          disabled={loading}
+        />
+      </div>
+      <div>
+        <span>Enable shortcuts</span>
+        <input
+          type="checkbox"
+          checked={config.enableShortcuts}
+          disabled={loading}
+        />
+      </div>
+    </div>
+  );
 };

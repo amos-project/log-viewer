@@ -1,3 +1,15 @@
+import {
+  ContextEvent,
+  JsonAction,
+  JsonViewAction,
+  JsonViewReadyResponse,
+  JsonViewResponse,
+} from '../../shared/types';
+import { Renderer } from './types';
+import { jsonRender } from './renderers/json_render';
+import { codeRender } from './renderers/code_render';
+import { ansiRender } from './renderers/ansi_render';
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'json-view',
@@ -6,8 +18,8 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['all'],
   });
   chrome.contextMenus.create({
-    id: 'xterm-view',
-    title: 'Xterm view',
+    id: 'ansi-view',
+    title: 'Ansi view',
     type: 'normal',
     contexts: ['all'],
   });
@@ -46,19 +58,45 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
   chrome.tabs.sendMessage(tab?.id, {
-    action: info.menuItemId,
-  });
+    action: info.menuItemId as ContextEvent['action'],
+  } satisfies ContextEvent);
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.type) {
-    case 'json-view-ready':
-      if (!sender.tab?.id) {
-        return;
-      }
-      const contentType = contentTypeMap.get(sender.tab.id);
-      contentTypeMap.delete(sender.tab.id);
-      sendResponse({ contentType: contentType });
-      break;
+const renderers: Record<JsonViewAction['type'], Renderer> = {
+  json: jsonRender,
+  code: codeRender,
+  ansi: ansiRender,
+};
+
+chrome.runtime.onMessage.addListener(
+  async (message: JsonAction, sender, sendResponse) => {
+    switch (message.type) {
+      case 'json-view-ready':
+        if (!sender.tab?.id) {
+          return;
+        }
+        const contentType = contentTypeMap.get(sender.tab.id) || '';
+        contentTypeMap.delete(sender.tab.id);
+        sendResponse({ contentType } satisfies JsonViewReadyResponse);
+        break;
+      default:
+        const renderer = renderers[message.type];
+        if (renderer) {
+          try {
+            const res = await renderer(message);
+            sendResponse(res);
+          } catch (e: any) {
+            console.log('Faield', e);
+            sendResponse({
+              style: '',
+              content: '',
+              error: (e?.stack || e) + '',
+            } satisfies JsonViewResponse);
+          }
+        } else {
+          console.log('unknown action', message);
+        }
+        break;
+    }
   }
-});
+);

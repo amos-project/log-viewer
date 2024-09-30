@@ -1,12 +1,10 @@
-const webpack = require('webpack'),
-  path = require('path'),
-  fileSystem = require('fs-extra'),
-  env = require('./utils/env'),
-  CopyWebpackPlugin = require('copy-webpack-plugin'),
-  HtmlWebpackPlugin = require('html-webpack-plugin'),
-  TerserPlugin = require('terser-webpack-plugin');
+const webpack = require('webpack');
+const path = require('path');
+const env = require('./utils/env');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 const ASSET_PATH = process.env.ASSET_PATH || '/';
 
@@ -23,15 +21,12 @@ const fileExtensions = [
   'woff2',
 ];
 
-var options = {
+const options = {
   mode: process.env.NODE_ENV || 'development',
   entry: {
     popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.tsx'),
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.ts'),
     contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.ts'),
-  },
-  chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -42,35 +37,54 @@ var options = {
   module: {
     rules: [
       {
-        // look for .css or .scss files
-        test: /\.(css|scss)$/,
-        // in the `src` directory
-        use: [
+        oneOf: [
           {
-            loader: 'style-loader',
+            resourceQuery: /raw/,
+            type: 'asset/source',
           },
           {
-            loader: 'css-loader',
+            // look for .css or .scss files
+            test: /\.(css|scss)$/,
+            // in the `src` directory
+            use: [
+              {
+                loader: 'style-loader',
+              },
+            ],
           },
           {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true,
-            },
+            test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
+            type: 'asset/resource',
+            exclude: /node_modules/,
           },
+          {
+            test: /\.html$/,
+            loader: 'html-loader',
+            exclude: /node_modules/,
+          },
+          { test: /\.(ts|tsx)$/, loader: 'ts-loader', exclude: /node_modules/ },
         ],
       },
       {
-        test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
-        type: 'asset/resource',
-        exclude: /node_modules/,
+        oneOf: [
+          {
+            // look for .css or .scss files
+            test: /\.(css|scss)$/,
+            // in the `src` directory
+            use: [
+              {
+                loader: 'css-loader',
+              },
+              {
+                loader: 'sass-loader',
+                options: {
+                  sourceMap: true,
+                },
+              },
+            ],
+          },
+        ],
       },
-      {
-        test: /\.html$/,
-        loader: 'html-loader',
-        exclude: /node_modules/,
-      },
-      { test: /\.(ts|tsx)$/, loader: 'ts-loader', exclude: /node_modules/ },
     ],
   },
   resolve: {
@@ -79,7 +93,6 @@ var options = {
       .concat(['.js', '.jsx', '.ts', '.tsx', '.css']),
   },
   plugins: [
-    new MonacoWebpackPlugin(),
     new CleanWebpackPlugin({ verbose: false }),
     new webpack.ProgressPlugin(),
     // expose and write the allowed env vars on the compiled bundle
