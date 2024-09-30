@@ -25,9 +25,9 @@ CJV also has options to trigger shortcuts in context menu `JSON`, except for `pp
 
 - `vv`: pretty print json, auto break lines in string, read from selection or current dom node.
 - `pp`: pretty print json, read from clipboard.
-- `cc`: pretty print current page's source code with monaco.
-- `hh`: pretty print current page's current html with monaco.
-- `xx`: pretty print current page's text content with xterm.
+- `cc`: pretty print current page's source code with prettier & shiki.
+- `hh`: pretty print current page's current html with monaco & shiki.
+- `xx`: pretty print current page's text content with ansi colors.
 
 ## Dev
 
