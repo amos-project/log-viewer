@@ -1,11 +1,12 @@
-.json-view-container {
+#json-view-container {
+  all: unset;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   overflow: auto;
-  white-space: pre-wrap;
+  white-space: pre;
   background: #121212;
   color: white;
   font-family: monospace;
@@ -15,20 +16,24 @@
   padding: 20px;
 }
 
-.json-view-container.json-view {
+#json-view-container *, #json-view-container *:before, #json-view-container *:after {
+  all: unset;
+}
+
+#json-view-container.json-view {
   left: 50%;
 }
 
-.json-view-container > pre {
+#json-view-container > pre {
   margin: 0;
 }
 
-.json-view-container > pre > code {
+#json-view-container > pre > code {
   counter-reset: step;
   counter-increment: step 0;
 }
 
-.json-view-container > pre > code > .line::before {
+#json-view-container > pre > code > .line::before {
   content: counter(step);
   counter-increment: step;
   width: 1rem;

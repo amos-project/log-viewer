@@ -40,7 +40,7 @@ const open = (view?: string) => {
     document.body.appendChild(htmlElem!);
   }
   if (view) {
-    htmlElem!.className = `json-view-container ${view}`;
+    htmlElem!.className = `${view}`;
   }
 };
 
@@ -91,7 +91,7 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
     }
     htmlElem = document.createElement('div');
     styleElem = document.createElement('style');
-    htmlElem.classList.add('json-view-container');
+    htmlElem.id = 'json-view-container';
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         close();
@@ -132,7 +132,8 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
     if (taskId !== id) {
       return;
     }
-    htmlElem.innerHTML = (res.error ? `<div style="color:#c00">${res.error}</div>` + '\n\n' : '') + res.content;
+    htmlElem.innerHTML =
+      (res.error ? `<div style="color:#c00">${res.error}</div>` + '\n\n' : '') + res.content;
     styleElem.innerHTML = commonStyle + '\n' + res.style;
   }
 }
