@@ -81,21 +81,13 @@ chrome.runtime.onMessage.addListener(
         sendResponse({ contentType } satisfies JsonViewReadyResponse);
         break;
       default:
-        const renderer = renderers[message.type];
-        if (renderer) {
-          try {
-            const res = await renderer(message);
-            sendResponse(res);
-          } catch (e: any) {
-            sendResponse({
-              style: '',
-              content: '',
-              error: (e?.stack || e) + '',
-            } satisfies JsonViewResponse);
-          }
-        } else {
-          console.log('unknown action', message);
+        let res: JsonViewResponse;
+        try {
+          res = await renderers[message.type](message);
+        } catch (e: any) {
+          res = { style: '', content: '', error: (e?.stack || e) + '' };
         }
+        sendResponse(res);
         break;
     }
   }, true)

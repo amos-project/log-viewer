@@ -127,9 +127,11 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
       size /= 1024;
       unitIdx++;
     }
-    htmlElem.innerHTML = `Loading ${unitIdx === 0 ? size : size.toFixed(1)}${units[unitIdx]} (${id})...`;
+    htmlElem.textContent =
+      `Loading ${unitIdx === 0 ? size : size.toFixed(1)}${units[unitIdx]} (${id})...\n\n` + content;
     const res: JsonViewResponse = await chrome.runtime.sendMessage(action);
     if (taskId !== id) {
+      // still block, no web worker in service worker, interesting.
       return;
     }
     htmlElem.innerHTML =

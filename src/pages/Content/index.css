@@ -42,3 +42,9 @@
   text-align: right;
   color: rgba(115, 138, 148, .4);
 }
+
+#json-view-container a {
+  text-decoration: underline;
+  color: cornflowerblue;
+  cursor: pointer;
+}

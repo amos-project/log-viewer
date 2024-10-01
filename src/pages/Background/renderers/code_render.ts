@@ -14,7 +14,7 @@ import markdownPlugin from 'prettier/plugins/markdown';
 import graphqlPlugin from 'prettier/plugins/graphql';
 import { detectUrlExt } from '../../../shared/utils';
 import mime from 'mime';
-import { bundledLanguages, codeToHtml } from 'shiki';
+import { colorize, enrichContent } from '../utils';
 
 const plugins = [
   estreePlugin,
@@ -97,19 +97,15 @@ export const codeRender: Renderer = async ({ content, contentType, url }) => {
       content = await prettier.format(content, {
         parser: parser,
         plugins,
-        printWidth: 200,
+        printWidth: 150,
         tabWidth: 4,
+        proseWrap: 'always',
       });
     } catch (e: any) {
       error = (e?.stack || e) + '';
     }
   }
-  if (ext in bundledLanguages) {
-    content = await codeToHtml(content, {
-      lang: ext,
-      theme: 'vitesse-dark',
-    });
-  }
+  content = await enrichContent(content, (content) => colorize(content, ext));
   return {
     style: '',
     content: content,

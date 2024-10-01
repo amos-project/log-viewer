@@ -4,7 +4,7 @@
  */
 
 import { Renderer } from '../types';
-import { codeToHtml } from 'shiki';
+import { colorize, enrichContent } from '../utils';
 
 let id = 0;
 
@@ -12,7 +12,7 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
   const str = JSON.stringify(
     value,
     (key, value1) => {
-      if (typeof value1 !== "string" || !/^[[{]/.test(value1)) {
+      if (typeof value1 !== 'string' || !/^[[{]/.test(value1)) {
         return value1;
       }
       try {
@@ -26,26 +26,26 @@ function prettyJson(value: any, map: Map<number, string>, depth: number) {
     },
     2
   );
-  const indent = "  ".repeat((depth + 1) * 2);
+  const indent = '  '.repeat((depth + 1) * 2);
   return str
     .replace(/\$__(\d+)__\$/g, ($0, $1) => {
-      const v = map.get(+$1) || "";
-      return v.replace(/\n/g, "\n  " + indent);
+      const v = map.get(+$1) || '';
+      return v.replace(/\n/g, '\n  ' + indent);
     })
-    .split("\n")
+    .split('\n')
     .map((v) => {
       const prefix = v.match(/^\s*/)![0];
-      return v.replace(/\\n/g, "\n  " + prefix);
+      return v.replace(/\\n/g, '\n  ' + prefix);
     })
-    .join("\n")
-    .replace(/\\t/g, "  ");
+    .join('\n')
+    .replace(/\\t/g, '  ');
 }
 
 function prettyString(text: string) {
-  if(/^.*?\{.*\}\s*$/.test(text)) {
+  if (/^.*?\{.*}\s*$/.test(text)) {
     return text.replace(/(^.*?{)(.*)(}\s*$)/, ($0, $1, $2, $3) => {
-      return $1 + "\n  " + $2.replace(/\s*,\s*/g, ',\n  ') + '\n' + $3;
-    })
+      return $1 + '\n  ' + $2.replace(/\s*,\s*/g, ',\n  ') + '\n' + $3;
+    });
   }
   return text;
 }
@@ -57,7 +57,7 @@ export const jsonRender: Renderer = async ({ content }) => {
     content = prettyJson(JSON.parse(content), tempMap, 0);
   } catch (e: any) {
     error = (e?.stack || e) + '';
-    content = content.replace(/-(?=[,}\]])/g, "-0");
+    content = content.replace(/-(?=[,}\]])/g, '-0');
     try {
       content = prettyJson(JSON.parse(content), tempMap, 0);
     } catch (e: any) {
@@ -65,10 +65,7 @@ export const jsonRender: Renderer = async ({ content }) => {
       content = prettyString(content);
     }
   }
-  content = await codeToHtml(content, {
-    lang: 'json',
-    theme: 'vitesse-dark',
-  });
+  content = await enrichContent(content, (content) => colorize(content, 'json'));
   return {
     error: error,
     content: content,
