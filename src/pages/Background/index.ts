@@ -20,7 +20,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
   chrome.contextMenus.create({
     id: 'ansi-view',
-    title: 'Ansi view',
+    title: 'ANSI view',
     type: 'normal',
     contexts: ['all'],
   });
@@ -31,7 +31,7 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['all'],
   });
   chrome.contextMenus.create({
-    id: 'html-view',
+    id: 'HTML-view',
     title: 'HTML view',
     type: 'normal',
     contexts: ['all'],
@@ -76,7 +76,7 @@ chrome.runtime.onMessage.addListener(
         if (!sender.tab?.id) {
           return;
         }
-        const contentType = contentTypeMap.get(sender.tab.id) || '';
+        const contentType = contentTypeMap.get(sender.tab.id) ?? 'text/html';
         contentTypeMap.delete(sender.tab.id);
         sendResponse({ contentType } satisfies JsonViewReadyResponse);
         break;

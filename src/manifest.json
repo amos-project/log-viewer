@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "JSON",
-  "description": "The JSON manipulator for chrome",
+  "name": "Log Viewer",
+  "version": "0.6.0",
+  "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "background": {
     "service_worker": "background.bundle.js"
   },
@@ -9,8 +10,7 @@
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   },
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon-34.png"
+    "default_icon": "icon.png"
   },
   "permissions": [
     "contextMenus",
@@ -22,7 +22,7 @@
     "<all_urls>"
   ],
   "icons": {
-    "128": "icon-128.png"
+    "128": "icon.png"
   },
   "content_scripts": [
     {
@@ -33,20 +33,6 @@
       ],
       "js": [
         "contentScript.bundle.js"
-      ]
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "icon-128.png",
-        "icon-34.png",
-        "popup.html"
-      ],
-      "matches": [
-        "http://*/*",
-        "https://*/*",
-        "<all_urls>"
       ]
     }
   ]

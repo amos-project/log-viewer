@@ -1,25 +1,23 @@
-<img src="src/assets/img/icon-128.png" width="64"/>
+<img src="src/assets/img/icon.svg" width="64"/>
 
-# Chrome Json View Extension
+# Log Viewer
 
-## Usage
+## Highlights
 
-### Install
+- Pretty and highlight print all text formats, including JSON, ANSI, HTML.
+- Auto wrap new lines in JSON string.
+- Supports text selection, element selection, clipboard.
+- Quick access with [shortcuts](#shortcuts).
+- [Auto format](#automation) page.
+
+## Install
 
 1. Download the zip file from release.
 2. Unzip it to a directory.
 3. Enable developer mode in <chrome://extensions>.
 4. Load the directory with Load unpacked button.
 
-### Automation
-
-CJV will auto open trigger `cc` shortcut if the current page's content type is resource, e.g., yaml, js, css.
-
-Note: there is no option to disable it at this moment.
-
-### Context menu
-
-CJV also has options to trigger shortcuts in context menu `JSON`, except for `pp`.
+## Usage
 
 ### Shortcuts
 
@@ -29,12 +27,22 @@ CJV also has options to trigger shortcuts in context menu `JSON`, except for `pp
 - `hh`: pretty print current page's current html with monaco & shiki.
 - `xx`: pretty print current page's text content with ansi colors.
 
+### Context menu
+
+Log Viewer also has options to trigger shortcuts in context menu `Log Viewer`, except for `pp`.
+
+### Automation
+
+Log Viewer will auto open (trigger `cc` shortcut) if the current page's content type is resource, e.g., yaml, js, css.
+
+Note: there is no option to disable it at this moment.
+
 ## Dev
 
 1. Clone the repo:
 
     ```bash
-    git clone https://github.com/MoeGolibrary/chrome-extension-json-dom-node.git
+    git clone https://github.com/MoeGolibrary/log-viewer.git
     ```
 
 2. Install dependencies:
