@@ -17,6 +17,10 @@
 3. Enable developer mode in <chrome://extensions>.
 4. Load the directory with Load unpacked button.
 
+## Shawcase
+
+![Showcase](./src/assets/img/screenshot-full.png)
+
 ## Usage
 
 ### Shortcuts

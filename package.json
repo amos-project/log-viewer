@@ -1,11 +1,15 @@
 {
   "name": "log-viewer",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/MoeGolibrary/log-viewer.git"
+  },
+  "demo": {
+    "stack": "Error: Demo error stack\n    at open (chrome-extension://nkocljmdlnpkgjcndooaggbcbjnnpnon/contentScript.bundle.js:166:41)\n    at prepareElem (chrome-extension://nkocljmdlnpkgjcndooaggbcbjnnpnon/contentScript.bundle.js:211:13)\n    at prepareElem (chrome-extension://nkocljmdlnpkgjcndooaggbcbjnnpnon/contentScript.bundle.js:227:16)\n    at render (chrome-extension://nkocljmdlnpkgjcndooaggbcbjnnpnon/contentScript.bundle.js:192:16)\n    at chrome-extension://nkocljmdlnpkgjcndooaggbcbjnnpnon/contentScript.bundle.js:287:16",
+    "json": "{\"scripts\":{\"build\":\"node utils/build.js\",\"start\":\"node utils/webserver.js\",\"prettier\":\"prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'\"}}"
   },
   "scripts": {
     "build": "node utils/build.js",

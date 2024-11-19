@@ -8,8 +8,8 @@ rm -rf build
 
 pnpm build
 
-rm -rf "$HOME/Downloads/chrome-json-view"*
+rm -rf "$HOME/Downloads/log-viewer-"*
 
 version="$(jq -r '.version' package.json)"
 cd build
-zip -r "$HOME/Downloads/chrome-json-view-$version.zip" -r .
+zip -r "$HOME/Downloads/log-viewer-$version.zip" -r .
