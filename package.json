@@ -3,6 +3,7 @@
   "version": "0.7.0",
   "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "license": "MIT",
+  "homepage": "https://github.com/MoeGolibrary/log-viewer",
   "repository": {
     "type": "git",
     "url": "https://github.com/MoeGolibrary/log-viewer.git"

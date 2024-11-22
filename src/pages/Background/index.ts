@@ -10,6 +10,7 @@ import { jsonRender } from './renderers/json_render';
 import { codeRender } from './renderers/code_render';
 import { ansiRender } from './renderers/ansi_render';
 import { omitAsync } from '../../shared/utils';
+import { homepage } from '../../../package.json';
 
 chrome.contextMenus.removeAll(() => {
   chrome.contextMenus.create({
@@ -36,6 +37,25 @@ chrome.contextMenus.removeAll(() => {
     type: 'normal',
     contexts: ['all'],
   });
+  chrome.contextMenus.create({
+    id: 'help',
+    title: 'Help',
+    type: 'normal',
+    contexts: ['all'],
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'help') {
+    chrome.tabs.create({ url: homepage });
+    return;
+  }
+  if (!tab?.id) {
+    return;
+  }
+  chrome.tabs.sendMessage(tab?.id, {
+    action: info.menuItemId as ContextEvent['action'],
+  } satisfies ContextEvent);
 });
 
 const contentTypeMap = new Map<number, string>();
@@ -53,15 +73,6 @@ chrome.webRequest.onHeadersReceived.addListener(
   },
   ['responseHeaders']
 );
-
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (!tab?.id) {
-    return;
-  }
-  chrome.tabs.sendMessage(tab?.id, {
-    action: info.menuItemId as ContextEvent['action'],
-  } satisfies ContextEvent);
-});
 
 const renderers: Record<JsonViewAction['type'], Renderer> = {
   json: jsonRender,
