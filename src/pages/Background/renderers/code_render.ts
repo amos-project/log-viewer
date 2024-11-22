@@ -84,7 +84,9 @@ function getPrettierParser(ext: string) {
 }
 
 export function detectContentTypeExt(contentType: string) {
-  const ext = mime.getExtension(contentType);
+  const ext =
+    mime.getExtension(contentType) ||
+    mime.getExtension(contentType.replace(/\/(?:x-|vnd\..*?\+)/, '/'));
   return ext === 'bin' || ext === 'txt' ? '' : ext || '';
 }
 

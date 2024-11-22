@@ -11,7 +11,7 @@ import { codeRender } from './renderers/code_render';
 import { ansiRender } from './renderers/ansi_render';
 import { omitAsync } from '../../shared/utils';
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.contextMenus.removeAll(() => {
   chrome.contextMenus.create({
     id: 'json-view',
     title: 'JSON view',
@@ -31,28 +31,28 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['all'],
   });
   chrome.contextMenus.create({
-    id: 'HTML-view',
+    id: 'html-view',
     title: 'HTML view',
     type: 'normal',
     contexts: ['all'],
   });
-
-  chrome.webRequest.onHeadersReceived.addListener(
-    (details) => {
-      const contentType = details.responseHeaders?.find(
-        (p) => p.name.toLowerCase() === 'content-type'
-      );
-      contentTypeMap.set(details.tabId, contentType?.value ?? '');
-    },
-    {
-      types: ['main_frame'],
-      urls: ['<all_urls>'],
-    },
-    ['responseHeaders']
-  );
 });
 
 const contentTypeMap = new Map<number, string>();
+
+chrome.webRequest.onHeadersReceived.addListener(
+  (details) => {
+    const contentType = details.responseHeaders?.find(
+      (p) => p.name.toLowerCase() === 'content-type'
+    );
+    contentTypeMap.set(details.tabId, contentType?.value ?? '');
+  },
+  {
+    types: ['main_frame'],
+    urls: ['<all_urls>'],
+  },
+  ['responseHeaders']
+);
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab?.id) {
