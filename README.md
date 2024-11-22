@@ -12,10 +12,7 @@
 
 ## Install
 
-1. Download the zip file from release.
-2. Unzip it to a directory.
-3. Enable developer mode in <chrome://extensions>.
-4. Load the directory with Load unpacked button.
+[![Chrome Extension](https://github.com/user-attachments/assets/ad7c5fd4-5b2d-4b68-b3ec-82e88d76b10e)](https://chromewebstore.google.com/detail/log-viewer/lbnkfmnolbefifdccejjijdgdipnfaib)
 
 ## Shawcase
 
