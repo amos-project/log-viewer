@@ -6,7 +6,7 @@
   "background": {
     "service_worker": "background.bundle.js"
   },
-  "homepage_url": "https://github.com/MoeGolibrary/log-viewer",
+  "homepage_url": "https://github.com/amos-project/log-viewer",
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
   },

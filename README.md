@@ -43,7 +43,7 @@ Note: there is no option to disable it at this moment.
 1. Clone the repo:
 
     ```bash
-    git clone https://github.com/MoeGolibrary/log-viewer.git
+    git clone https://github.com/amos-project/log-viewer.git
     ```
 
 2. Install dependencies:
