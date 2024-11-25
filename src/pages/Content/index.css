@@ -2,7 +2,7 @@
   all: unset;
   position: fixed;
   top: 0;
-  left: 0;
+  left: 50%;
   right: 0;
   bottom: 0;
   overflow: auto;
@@ -14,14 +14,15 @@
   z-index: 999999;
   padding: 20px;
   tab-size: 4em;
+  white-space: pre-wrap;
 }
 
 #json-view-container *, #json-view-container *:before, #json-view-container *:after {
   all: unset;
 }
 
-#json-view-container.json-view {
-  left: 50%;
+#json-view-container.full {
+  left: 0;
 }
 
 #json-view-container > pre {
@@ -31,6 +32,10 @@
 #json-view-container > pre > code {
   counter-reset: step;
   counter-increment: step 0;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 #json-view-container > pre > code > .line::before {
@@ -49,12 +54,6 @@
   padding-left: 1em;
   color: rgb(115, 138, 148);
   cursor: pointer;
-}
-
-#json-view-container > pre > code {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
 }
 
 #json-view-container > pre > code > .line {

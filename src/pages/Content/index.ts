@@ -78,7 +78,7 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
       await showJsonView('json', await getTargetText(src || targetElement));
       break;
     case 'ansi-view':
-      await showJsonView('ansi', getTextContent());
+      await showJsonView('ansi', await getTargetText(src || targetElement));
       break;
     case 'html-view':
       await showJsonView('code', getHtml(), 'text/html');
@@ -170,12 +170,13 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
   }
 }
 
-const accepts: Record<string, ContextEvent['action']> = {
+const accepts: Record<string, ContextEvent['action'] | 'full'> = {
   v: 'json-view',
   x: 'ansi-view',
   h: 'html-view',
   c: 'code-view',
   p: 'json-view',
+  f: 'full',
 };
 
 const sources: Record<string, 'clipboard'> = {
@@ -238,6 +239,11 @@ document.addEventListener('keydown', async (e) => {
     return;
   }
   if (lastTime - oldTime < 300) {
-    await render(accepts[e.key], sources[e.key]);
+    const action = accepts[e.key];
+    if (action === 'full') {
+      htmlElem?.classList.toggle('full');
+      return;
+    }
+    await render(action, sources[e.key]);
   }
 });

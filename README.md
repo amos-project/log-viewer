@@ -27,6 +27,8 @@
 - `cc`: pretty print current page's source code with prettier & shiki.
 - `hh`: pretty print current page's current html with monaco & shiki.
 - `xx`: pretty print current page's text content with ansi colors.
+- `ff`: toggle full screen mode.
+- `Esc`: exit log viewer.
 
 ### Context menu
 
@@ -49,19 +51,19 @@ Note: there is no option to disable it at this moment.
 2. Install dependencies:
 
     ````bash
-    pnpm i
+    yarn i
     ````
 
 3. Start dev server:
 
     ```bash
-    pnpm start
+    yarn start
     ```
 
 4. Build
 
    ```bash
-   pnpm build
+   yarn build
    # or, generate all
    ./build.sh
    ```
