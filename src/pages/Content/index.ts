@@ -106,8 +106,9 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
         let el = e.target.nextElementSibling;
         let found = false;
         while (el) {
-          const nextIndent = (el.textContent || '').match(/^\s*/)![0].length;
-          if (indent < nextIndent) {
+          const content = el.textContent || '';
+          const nextIndent = content.match(/^\s*/)![0].length;
+          if (indent < nextIndent || !content.trim()) {
             el.classList.remove('closed');
             open ? el.classList.remove('hidden') : el.classList.add('hidden');
             el = el.nextElementSibling;
