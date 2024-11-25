@@ -6,7 +6,7 @@ set -xeuo pipefail
 
 rm -rf build
 
-pnpm build
+yarn build
 
 rm -rf "$HOME/Downloads/log-viewer-"*
 
