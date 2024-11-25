@@ -1,6 +1,6 @@
 {
   "name": "log-viewer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "license": "MIT",
   "homepage": "https://github.com/amos-project/log-viewer",
