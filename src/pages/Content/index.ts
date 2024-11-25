@@ -1,5 +1,10 @@
 import { detectUrlExt } from '../../shared/utils';
-import { ContextEvent, JsonViewAction, JsonViewResponse } from '../../shared/types';
+import {
+  ContextEvent,
+  JsonViewAction,
+  JsonViewReadyResponse,
+  JsonViewResponse,
+} from '../../shared/types';
 import commonStyle from './index.css?raw';
 
 export async function getTargetText(targetElement: HTMLElement | undefined | 'clipboard') {
@@ -80,7 +85,9 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
       break;
     case 'code-view':
       const [content, contentType] = await getCode();
-      await showJsonView('code', content, contentType);
+      const urlExt = detectUrlExt(location.href);
+      const isJson = contentType.includes('json') || urlExt.includes('json');
+      await showJsonView(isJson ? 'json' : 'code', content, contentType);
       break;
   }
 
@@ -92,6 +99,28 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
     htmlElem = document.createElement('div');
     styleElem = document.createElement('style');
     htmlElem.id = 'json-view-container';
+    htmlElem.addEventListener('click', (e) => {
+      if (e.target instanceof HTMLElement && e.target.classList.contains('line')) {
+        const open = e.target.classList.contains('closed');
+        const indent = (e.target.textContent || '').match(/^\s*/)![0].length;
+        let el = e.target.nextElementSibling;
+        let found = false;
+        while (el) {
+          const nextIndent = (el.textContent || '').match(/^\s*/)![0].length;
+          if (indent < nextIndent) {
+            el.classList.remove('closed');
+            open ? el.classList.remove('hidden') : el.classList.add('hidden');
+            el = el.nextElementSibling;
+            found ||= true;
+          } else {
+            break;
+          }
+        }
+        if (found) {
+          e.target.classList.toggle('closed');
+        }
+      }
+    });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         close();
@@ -175,7 +204,7 @@ const shouldNot = (type: string) => {
 
 chrome.runtime.onMessage.addListener((message) => render(message.action));
 
-chrome.runtime.sendMessage({ type: 'json-view-ready' }).then((r) => {
+chrome.runtime.sendMessage({ type: 'json-view-ready' }).then((r: JsonViewReadyResponse) => {
   if (shouldNot(r.contentType)) {
     return;
   }
