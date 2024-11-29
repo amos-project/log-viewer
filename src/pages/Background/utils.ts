@@ -37,3 +37,33 @@ export async function enrichContent(
     }
   });
 }
+
+export function errorContent(e: any) {
+  const content = (e?.stack || e) + '';
+  return `<div style="color:red; white-space: pre">${content}</div>`;
+}
+
+export function* splitCode(content: string) {
+  let pos = 0;
+  while (true) {
+    let end = pos;
+    while (end !== -1 && end - pos < 64 << 10) {
+      end = content.indexOf('\n', end + 1);
+    }
+    yield content.substring(pos, end === -1 ? content.length : end + 1);
+    pos = end;
+    if (end === -1) {
+      return;
+    }
+  }
+}
+
+export async function* splitEnrichCode(
+  content: string,
+  format: (content: string) => Promise<string> | string
+) {
+  for (const part of splitCode(content)) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    yield await enrichContent(part, format);
+  }
+}

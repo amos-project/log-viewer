@@ -6,6 +6,7 @@ import {
   JsonViewResponse,
 } from '../../shared/types';
 import commonStyle from './index.css?raw';
+import Port = chrome.runtime.Port;
 
 export async function getTargetText(targetElement: HTMLElement | undefined | 'clipboard') {
   if (targetElement === 'clipboard') {
@@ -23,6 +24,7 @@ export async function getCode() {
 
 let styleElem: HTMLStyleElement;
 let htmlElem: HTMLDivElement;
+let port: Port | undefined;
 
 const close = () => {
   if (htmlElem?.parentNode) {
@@ -33,6 +35,8 @@ const close = () => {
     styleElem.innerHTML = commonStyle;
     styleElem.parentNode.removeChild(styleElem);
   }
+  port?.disconnect();
+  port = void 0;
 };
 
 const open = (view?: string) => {
@@ -157,16 +161,32 @@ async function render(action: ContextEvent['action'], src?: 'clipboard') {
       size /= 1024;
       unitIdx++;
     }
-    htmlElem.textContent =
-      `Loading ${unitIdx === 0 ? size : size.toFixed(1)}${units[unitIdx]} (${id})...\n\n` + content;
-    const res: JsonViewResponse = await chrome.runtime.sendMessage(action);
-    if (taskId !== id) {
-      // still block, no web worker in service worker, interesting.
-      return;
-    }
-    htmlElem.innerHTML =
-      (res.error ? `<div style="color:#c00">${res.error}</div>` + '\n\n' : '') + res.content;
-    styleElem.innerHTML = commonStyle + '\n' + res.style;
+    styleElem.innerHTML = commonStyle;
+    htmlElem.innerHTML = '';
+    port?.disconnect();
+    port = chrome.runtime.connect();
+    port.onDisconnect.addListener(() => {
+      port = void 0;
+    });
+    const parts: string[] = [''];
+    port.onMessage.addListener((res: JsonViewResponse) => {
+      if (parts[parts.length - 1].length > 20 << 20) {
+        parts.push('');
+      }
+      parts[parts.length - 1] += res.content;
+      if (parts.length === 1) {
+        const div = document.createElement('div');
+        div.innerHTML = res.content;
+        const inCode = div.querySelector(':scope > pre > code');
+        const toCode = htmlElem.querySelector(':scope > pre > code');
+        if (inCode && toCode) {
+          toCode.append(...inCode.childNodes);
+        } else {
+          htmlElem.append(...div.childNodes);
+        }
+      }
+    });
+    port.postMessage(action);
   }
 }
 

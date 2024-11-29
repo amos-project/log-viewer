@@ -8,9 +8,8 @@ import ansiHTML from 'ansi-html';
 import { encode } from 'html-entities';
 import { enrichContent } from '../utils';
 
-export const ansiRender: Renderer = async ({ content }) => {
-  // on conflicts between html entities and ansi controls
+export const ansiRender: Renderer = async function* ({ content }) {
   content = await enrichContent(content, encode);
   content = ansiHTML(content);
-  return { style: '', error: '', content: content };
+  yield content;
 };

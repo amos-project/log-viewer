@@ -14,7 +14,8 @@ import markdownPlugin from 'prettier/plugins/markdown';
 import graphqlPlugin from 'prettier/plugins/graphql';
 import { detectUrlExt } from '../../../shared/utils';
 import mime from 'mime';
-import { colorize, enrichContent } from '../utils';
+import { colorize, errorContent, splitEnrichCode } from '../utils';
+import { biomeFormat } from './biome';
 
 const plugins = [
   estreePlugin,
@@ -41,16 +42,20 @@ type ParserType =
   | 'mdx'
   | 'graphql';
 
-const parserMap: Record<ParserType, { ext?: string[]; mime?: string[]; denyMime?: string[] }> = {
-  babel: { mime: ['application/javascript', 'text/javascript'], ext: [] },
+const parserMap: Record<
+  ParserType,
+  { ext?: string[]; mime?: string[]; denyMime?: string[]; biome?: boolean }
+> = {
+  babel: { mime: ['application/javascript', 'text/javascript'], ext: [], biome: true },
   'babel-ts': {
     mime: [],
     ext: ['ts', 'tsx', 'mts', 'cts', 'mtsx', 'ctsx'],
     denyMime: ['video/mp2t'],
+    biome: true,
   },
-  json: { mime: ['application/json'], ext: [] },
+  json: { mime: ['application/json'], ext: [], biome: true },
   json5: { mime: ['application/json5'], ext: [] },
-  css: { mime: ['text/css'], ext: [] },
+  css: { mime: ['text/css'], ext: [], biome: true },
   less: { mime: ['text/less'], ext: [] },
   scss: { mime: ['text/x-scss'], ext: [] },
   html: { mime: ['text/html', 'application/xml'], ext: [] },
@@ -58,7 +63,7 @@ const parserMap: Record<ParserType, { ext?: string[]; mime?: string[]; denyMime?
   yaml: { mime: ['text/yaml'], ext: [] },
   markdown: { mime: ['text/markdown'], ext: [] },
   mdx: { mime: ['text/mdx'], ext: [] },
-  graphql: { mime: [], ext: ['graphql'] },
+  graphql: { mime: [], ext: ['graphql'], biome: true },
 };
 
 const parsers = Object.keys(parserMap) as ParserType[];
@@ -72,7 +77,7 @@ function getPrettierParser(ext: string) {
     }
   }
   if (!m) {
-    return '';
+    return void 0;
   }
   for (const p of parsers) {
     const c = parserMap[p];
@@ -80,7 +85,7 @@ function getPrettierParser(ext: string) {
       return p;
     }
   }
-  return '';
+  return void 0;
 }
 
 export function detectContentTypeExt(contentType: string) {
@@ -90,27 +95,25 @@ export function detectContentTypeExt(contentType: string) {
   return ext === 'bin' || ext === 'txt' ? '' : ext || '';
 }
 
-export const codeRender: Renderer = async ({ content, contentType, url }) => {
+export const codeRender: Renderer = async function* ({ content, contentType, url }) {
   const ext = detectContentTypeExt(contentType) || detectUrlExt(url);
   let parser = getPrettierParser(ext);
-  let error = '';
   if (parser) {
     try {
-      content = await prettier.format(content, {
-        parser: parser,
-        plugins,
-        printWidth: 150,
-        tabWidth: 4,
-        proseWrap: 'always',
-      });
+      if (parserMap[parser].biome) {
+        content = await biomeFormat(content, ext);
+      } else {
+        content = await prettier.format(content, {
+          parser: parser,
+          plugins,
+          printWidth: 150,
+          tabWidth: 4,
+          proseWrap: 'always',
+        });
+      }
     } catch (e: any) {
-      error = (e?.stack || e) + '';
+      yield errorContent(e);
     }
   }
-  content = await enrichContent(content, (content) => colorize(content, ext));
-  return {
-    style: '',
-    content: content,
-    error: error,
-  };
+  yield* splitEnrichCode(content, (content) => colorize(content, ext));
 };

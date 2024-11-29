@@ -24,6 +24,9 @@ const options = {
     publicPath: ASSET_PATH,
     chunkFormat: false,
   },
+  experiments: {
+    asyncWebAssembly: true,
+  },
   module: {
     rules: [
       {
@@ -82,21 +85,7 @@ const options = {
           from: 'src/manifest.json',
           to: path.join(__dirname, 'build'),
           force: true,
-          transform: function (content, path) {
-            // generates the manifest file using the package.json informations
-            return Buffer.from(
-              JSON.stringify({
-                ...JSON.parse(content.toString()),
-                description: pkgJson.description,
-                version: pkgJson.version,
-              })
-            );
-          },
         },
-      ],
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
         {
           from: 'src/assets/img/icon.png',
           to: path.join(__dirname, 'build'),

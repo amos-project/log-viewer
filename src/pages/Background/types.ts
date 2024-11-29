@@ -3,6 +3,6 @@
  * @author junbao <junbao@moego.pet>
  */
 
-import { JsonViewAction, JsonViewResponse } from '../../shared/types';
+import { JsonViewAction } from '../../shared/types';
 
-export type Renderer = (action: JsonViewAction) => JsonViewResponse | Promise<JsonViewResponse>;
+export type Renderer = (action: JsonViewAction) => AsyncIterableIterator<string>;

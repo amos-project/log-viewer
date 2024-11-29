@@ -4,7 +4,7 @@
  */
 
 import { Renderer } from '../types';
-import { colorize, enrichContent } from '../utils';
+import { colorize, errorContent, splitEnrichCode } from '../utils';
 
 let id = 0;
 
@@ -50,25 +50,19 @@ function prettyString(text: string) {
   return text;
 }
 
-export const jsonRender: Renderer = async ({ content }) => {
-  let error = '';
+export const jsonRender: Renderer = async function* ({ content }) {
   const tempMap = new Map<number, string>();
   try {
     content = prettyJson(JSON.parse(content), tempMap, 0);
   } catch (e: any) {
-    error = (e?.stack || e) + '';
+    yield errorContent(e);
     content = content.replace(/-(?=[,}\]])/g, '-0');
     try {
       content = prettyJson(JSON.parse(content), tempMap, 0);
     } catch (e: any) {
-      error = (e?.stack || e) + '';
+      yield errorContent(e);
       content = prettyString(content);
     }
   }
-  content = await enrichContent(content, (content) => colorize(content, 'json'));
-  return {
-    error: error,
-    content: content,
-    style: '',
-  };
+  yield* splitEnrichCode(content, (content) => colorize(content, 'json'));
 };

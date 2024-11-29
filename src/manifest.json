@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Log Viewer",
-  "version": "0.6.0",
+  "version": "1.2.0",
   "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "background": {
     "service_worker": "background.bundle.js"

@@ -1,16 +1,18 @@
 import {
   ContextEvent,
-  JsonAction,
   JsonViewAction,
+  JsonViewReadyAction,
   JsonViewReadyResponse,
   JsonViewResponse,
 } from '../../shared/types';
 import { Renderer } from './types';
 import { jsonRender } from './renderers/json_render';
-import { codeRender } from './renderers/code_render';
 import { ansiRender } from './renderers/ansi_render';
-import { omitAsync } from '../../shared/utils';
 import { homepage } from '../../../package.json';
+import { codeRender } from './renderers/code_render';
+import { errorContent } from './utils';
+
+__webpack_public_path__ = chrome.runtime.getURL('/');
 
 chrome.contextMenus.removeAll(() => {
   chrome.contextMenus.create({
@@ -80,26 +82,31 @@ const renderers: Record<JsonViewAction['type'], Renderer> = {
   ansi: ansiRender,
 };
 
-chrome.runtime.onMessage.addListener(
-  omitAsync(async (message: JsonAction, sender, sendResponse) => {
-    switch (message.type) {
-      case 'json-view-ready':
-        if (!sender.tab?.id) {
+chrome.runtime.onConnect.addListener((port) => {
+  let disconnected = false;
+  port.onMessage.addListener(async (message: JsonViewAction) => {
+    try {
+      for await (const content of renderers[message.type](message)) {
+        if (disconnected) {
           return;
         }
-        const contentType = contentTypeMap.get(sender.tab.id) ?? 'text/html';
-        contentTypeMap.delete(sender.tab.id);
-        sendResponse({ contentType } satisfies JsonViewReadyResponse);
-        break;
-      default:
-        let res: JsonViewResponse;
-        try {
-          res = await renderers[message.type](message);
-        } catch (e: any) {
-          res = { style: '', content: '', error: (e?.stack || e) + '' };
-        }
-        sendResponse(res);
-        break;
+        port.postMessage({ content } satisfies JsonViewResponse);
+      }
+    } catch (e) {
+      port.postMessage({ content: errorContent(e) } satisfies JsonViewResponse);
     }
-  }, true)
-);
+    port.disconnect();
+  });
+  port.onDisconnect.addListener(() => {
+    disconnected = true;
+  });
+});
+
+chrome.runtime.onMessage.addListener((message: JsonViewReadyAction, sender, sendResponse) => {
+  if (!sender.tab?.id) {
+    return;
+  }
+  const contentType = contentTypeMap.get(sender.tab.id) ?? 'text/html';
+  contentTypeMap.delete(sender.tab.id);
+  sendResponse({ contentType } as JsonViewReadyResponse);
+});

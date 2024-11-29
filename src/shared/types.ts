@@ -30,14 +30,10 @@ export interface JsonViewReadyAction {
   type: 'json-view-ready';
 }
 
-export type JsonAction = JsonViewReadyAction | JsonViewAction;
-
 export interface JsonViewReadyResponse {
   contentType: string;
 }
 
 export interface JsonViewResponse {
-  style: string;
   content: string;
-  error: string;
 }
