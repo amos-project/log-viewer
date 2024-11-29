@@ -1,6 +1,6 @@
 {
   "name": "log-viewer",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "product": "Log Viewer",
   "description": "A handy log and code pretty printing and highlighting tool, supporting all formats such as text, JSON, ANSI, XML, etc.",
   "private": true,
