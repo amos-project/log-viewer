@@ -2,10 +2,8 @@ const webpack = require('webpack');
 const path = require('path');
 const env = require('./utils/env');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const pkgJson = require('./package.json');
 
 const ASSET_PATH = process.env.ASSET_PATH || '/';
 

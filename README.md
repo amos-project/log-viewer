@@ -2,10 +2,14 @@
 
 # Log Viewer
 
+Log Viewer is a handy tool to help you read logs happily in your browser, especially error logs. It also supports common
+code formatting and highlighting, such as XML, YAML, etc., especially supports **ANSI** formatting.
+
 ## Highlights
 
-- Pretty and highlight print all text formats, including JSON, ANSI, HTML.
-- Auto wrap new lines in JSON string.
+- Customized JSON formatting scheme, allowing you to clearly read JSON formatted error logs, especially call stack
+  information.
+- Format and highlight almost any text format, such as JSON, ANSI, HTML, YAML, etc.
 - Supports text selection, element selection, clipboard.
 - Quick access with [shortcuts](#shortcuts).
 - [Auto format](#automation) page.
@@ -14,18 +18,37 @@
 
 [![Chrome Extension](https://github.com/user-attachments/assets/ad7c5fd4-5b2d-4b68-b3ec-82e88d76b10e)](https://chromewebstore.google.com/detail/log-viewer/lbnkfmnolbefifdccejjijdgdipnfaib)
 
-## Shawcase
+## Showcase
 
-![Showcase](./src/assets/img/screenshot-full.png)
+<details open>
+<summary>Pretty JSON</summary>
+
+![JSON View](./src/assets/img/screen-json-full.png)
+
+</details>
+
+<details>
+<summary>Pretty ANSI</summary>
+
+![JSON View](./src/assets/img/screen-ansi-full.png)
+
+</details>
+
+<details>
+<summary>Pretty YAML</summary>
+
+![JSON View](./src/assets/img/screen-yaml-full.png)
+
+</details>
 
 ## Usage
 
 ### Shortcuts
 
-- `vv`: pretty print json, auto break lines in string, read from selection or current dom node.
+- `vv`: pretty print json, read from selection or current hovered dom node.
 - `pp`: pretty print json, read from clipboard.
-- `cc`: pretty print current page's source code with prettier & shiki.
-- `hh`: pretty print current page's current html with monaco & shiki.
+- `cc`: pretty print current page's source code, auto detect content type.
+- `hh`: pretty print current page's current html.
 - `xx`: pretty print current page's text content with ansi colors.
 - `ff`: toggle full screen mode.
 - `Esc`: exit log viewer.
